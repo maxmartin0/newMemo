@@ -1,17 +1,28 @@
-const express = require('express');
-const path = require('path');
+const session = require('express-session');
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+// Add session middleware
+app.use(session({
+  secret: 'secret_key_change_this', // change this in production
+  resave: false,
+  saveUninitialized: false
+}));
 
-// Serve static files from the 'public' folder
-app.use(express.static(path.join(__dirname, 'public')));
+// Login route
+app.post('/login', (req, res) => {
+  const { username, password } = req.body;
 
-// Fallback route (optional)
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
+  db.get(`SELECT * FROM users WHERE username = ?`, [username], async (err, user) => {
+    if (err) return res.send("An error occurred.");
+    if (!user) return res.send("User not found.");
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) return res.send("Incorrect password.");
+
+    // Save user session
+    req.session.userId = user.id;
+    req.session.username = user.username;
+    req.session.role = user.role;
+
+    res.send(`Welcome, ${user.username}! You are now logged in.`);
+  });
 });
