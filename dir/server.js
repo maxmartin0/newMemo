@@ -1,132 +1,100 @@
 const express = require('express');
-const path = require('path');
-const fs = require('fs');
-const bodyParser = require('body-parser');
-const bcrypt = require('bcryptjs');
 const session = require('express-session');
+const path = require('path');
 const Database = require('better-sqlite3');
+const fs = require('fs');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 
-// ----------------------
-// PATHS (MATCH YOUR STRUCTURE)
-// ----------------------
-const ROOT_DIR = __dirname; // /dir
-const PUBLIC_DIR = path.join(ROOT_DIR, 'public');
-const DATA_DIR = path.join(ROOT_DIR, 'data');
+// Paths
+const BASE_DIR = __dirname;
+const PUBLIC_DIR = path.join(BASE_DIR, 'public');
+const DATA_DIR = path.join(BASE_DIR, 'data');
 
-// ----------------------
-// ENSURE DATA DIRECTORY EXISTS
-// ----------------------
+// Ensure data directory exists
 if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
+  fs.mkdirSync(DATA_DIR);
 }
 
-// ----------------------
-// DATABASE SETUP
-// ----------------------
-const dbPath = path.join(DATA_DIR, 'database.db');
-const db = new Database(dbPath);
+// Database
+const db = new Database(path.join(DATA_DIR, 'database.db'));
 
+// Create users table if it doesn't exist
 db.prepare(`
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL,
-    role TEXT DEFAULT 'user'
+    username TEXT UNIQUE,
+    password TEXT
   )
 `).run();
 
-// ----------------------
-// MIDDLEWARE
-// ----------------------
-app.use(bodyParser.urlencoded({ extended: true }));
+// Middleware
+app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+
+app.use(
+  session({
+    secret: 'super-secret-key',
+    resave: false,
+    saveUninitialized: false
+  })
+);
+
+// Static files
 app.use(express.static(PUBLIC_DIR));
 
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'dev_secret_change_me',
-  resave: false,
-  saveUninitialized: false
-}));
+/* ---------- AUTH ---------- */
 
-// ----------------------
-// ROUTES
-// ----------------------
-app.get('/', (req, res) => {
-  if (req.session.userId) return res.redirect('/home');
-  res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
-});
-
-// Login (AJAX)
-app.post('/login', async (req, res) => {
+// Login
+app.post('/login', (req, res) => {
   const { username, password } = req.body;
 
-  const user = db.prepare(
-    'SELECT * FROM users WHERE username = ?'
-  ).get(username);
+  const user = db
+    .prepare('SELECT * FROM users WHERE username = ? AND password = ?')
+    .get(username, password);
 
   if (!user) {
-    return res.json({ success: false, message: 'User not found' });
-  }
-
-  const match = await bcrypt.compare(password, user.password);
-  if (!match) {
-    return res.json({ success: false, message: 'Incorrect password' });
+    return res.status(401).json({ error: 'Invalid username or password' });
   }
 
   req.session.userId = user.id;
-  req.session.role = user.role;
   res.json({ success: true });
 });
 
 // Register
-app.post('/register', async (req, res) => {
+app.post('/register', (req, res) => {
   const { username, password } = req.body;
-  if (!username || !password) {
-    return res.send('Username and password required.');
-  }
-
-  const hashed = await bcrypt.hash(password, 10);
 
   try {
     db.prepare(
       'INSERT INTO users (username, password) VALUES (?, ?)'
-    ).run(username, hashed);
+    ).run(username, password);
 
-    res.send("Account created! <a href='/'>Login</a>");
+    res.json({ success: true });
   } catch {
-    res.send('Username already exists.');
+    res.status(400).json({ error: 'Username already exists' });
   }
 });
 
 // Logout
-app.get('/logout', (req, res) => {
-  req.session.destroy(() => res.redirect('/'));
+app.post('/logout', (req, res) => {
+  req.session.destroy(() => {
+    res.redirect('/');
+  });
 });
 
-// Home page
+/* ---------- PROTECTED HOME ---------- */
+
 app.get('/home', (req, res) => {
-  if (!req.session.userId) return res.redirect('/');
+  if (!req.session.userId) {
+    return res.redirect('/');
+  }
 
-  res.send(`
-    <html>
-      <head>
-        <title>Home</title>
-        <link rel="stylesheet" href="/style.css">
-      </head>
-      <body style="background:#0F172A;color:#E5E7EB;
-                   display:flex;flex-direction:column;
-                   justify-content:center;align-items:center;
-                   height:100vh;">
-        <h1>You are logged in</h1>
-        <p>This page is intentionally blank for future features.</p>
-        <a href="/logout" style="color:#3B82F6;margin-top:2rem;">Logout</a>
-      </body>
-    </html>
-  `);
+  res.sendFile(path.join(PUBLIC_DIR, 'home.html'));
 });
+
+/* ---------- START SERVER ---------- */
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
