@@ -12,8 +12,6 @@ const PORT = process.env.PORT || 3000;
 // DATABASE SETUP
 // ----------------------
 const db = new Database('database.db');
-
-// Create users table if it doesn't exist
 db.prepare(`
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -28,7 +26,7 @@ db.prepare(`
 // ----------------------
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Must come BEFORE routes for static assets
+// Static files (CSS, JS, images)
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(session({
@@ -41,7 +39,7 @@ app.use(session({
 // ROUTES
 // ----------------------
 
-// Home page
+// Homepage
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
@@ -49,11 +47,9 @@ app.get('/', (req, res) => {
 // Register new user
 app.post('/register', async (req, res) => {
   const { username, password } = req.body;
-
   if (!username || !password) return res.send("Username and password required.");
 
   const hashed = await bcrypt.hash(password, 10);
-
   try {
     db.prepare('INSERT INTO users (username, password) VALUES (?, ?)').run(username, hashed);
     res.send("Account created! <a href='/'>Login</a>");
@@ -65,7 +61,6 @@ app.post('/register', async (req, res) => {
 // Login
 app.post('/login', async (req, res) => {
   const { username, password } = req.body;
-
   const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
   if (!user) return res.send("User not found.");
 
@@ -75,7 +70,7 @@ app.post('/login', async (req, res) => {
   req.session.userId = user.id;
   req.session.role = user.role;
 
-  res.send(`Welcome ${user.username}!`);
+  res.send(`Welcome ${user.username}! <a href='/'>Go back</a>`);
 });
 
 // Logout

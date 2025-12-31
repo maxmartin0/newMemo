@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
+
   <!-- Navbar -->
   <nav class="navbar">
     <h1 class="logo">MySite</h1>
@@ -21,13 +22,26 @@
   <!-- Hero -->
   <section class="hero">
     <h2>Welcome Back</h2>
-    <p>Please sign in to continue</p>
+    <p>Please sign in or create an account to continue</p>
 
-    <!-- Login Box -->
     <div class="login-box">
-      <input type="text" placeholder="Username" />
-      <input type="password" placeholder="Password" />
-      <button class="btn">Login</button>
+
+      <!-- LOGIN FORM -->
+      <form action="/login" method="POST">
+        <input type="text" name="username" placeholder="Username" required />
+        <input type="password" name="password" placeholder="Password" required />
+        <button class="btn" type="submit">Login</button>
+      </form>
+
+      <hr style="margin:1rem 0; border:0; border-top:1px solid #94A3B8;">
+
+      <!-- REGISTER FORM -->
+      <form action="/register" method="POST">
+        <input type="text" name="username" placeholder="New Username" required />
+        <input type="password" name="password" placeholder="New Password" required />
+        <button class="btn" type="submit">Register</button>
+      </form>
+
     </div>
   </section>
 
@@ -53,5 +67,6 @@
   <footer class="footer">
     <p>© 2025 MySite</p>
   </footer>
+
 </body>
 </html>
