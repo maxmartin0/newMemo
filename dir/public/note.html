@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Edit Note</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="top-text">
+  <h1>Edit Note</h1>
+</div>
+
+<form id="noteForm" method="POST">
+  <input name="title" placeholder="Title" required>
+  <textarea name="content" placeholder="Content"></textarea>
+  <button type="submit">Save</button>
+</form>
+
+<form id="deleteForm" method="POST">
+  <button type="submit">Delete Note</button>
+</form>
+
+<script>
+  const noteId = window.location.pathname.split('/').pop();
+
+  async function loadNote() {
+    const res = await fetch('/notes');
+    const notes = await res.json();
+    const note = notes.find(n => n.id == noteId);
+    if (note) {
+      document.noteForm.title.value = note.title;
+      document.noteForm.content.value = note.content;
+    }
+  }
+
+  document.noteForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    await fetch(`/notes/${noteId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `title=${encodeURIComponent(document.noteForm.title.value)}&content=${encodeURIComponent(document.noteForm.content.value)}`
+    });
+    window.location.href = '/home';
+  });
+
+  document.deleteForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    await fetch(`/notes/${noteId}/delete`, { method: 'POST' });
+    window.location.href = '/home';
+  });
+
+  loadNote();
+</script>
+</body>
+</html>
