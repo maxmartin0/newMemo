@@ -1,10 +1,12 @@
 {
   "name": "my-site",
   "version": "1.0.0",
-  "description": "Neo modern site",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
+  },
+  "engines": {
+    "node": "18.x"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
