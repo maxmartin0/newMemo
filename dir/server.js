@@ -7,12 +7,11 @@ const fs = require('fs');
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// Paths
 const BASE_DIR = __dirname;
 const PUBLIC_DIR = path.join(BASE_DIR, 'public');
 const DATA_DIR = path.join(BASE_DIR, 'data');
 
-// Ensure data directory exists
+// Ensure data folder exists
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR);
 }
@@ -20,7 +19,6 @@ if (!fs.existsSync(DATA_DIR)) {
 // Database
 const db = new Database(path.join(DATA_DIR, 'database.db'));
 
-// Create users table if it doesn't exist
 db.prepare(`
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -55,7 +53,9 @@ app.post('/login', (req, res) => {
     .get(username, password);
 
   if (!user) {
-    return res.status(401).json({ error: 'Invalid username or password' });
+    return res.status(401).json({
+      error: 'Invalid username or password'
+    });
   }
 
   req.session.userId = user.id;
@@ -73,8 +73,18 @@ app.post('/register', (req, res) => {
 
     res.json({ success: true });
   } catch {
-    res.status(400).json({ error: 'Username already exists' });
+    res.status(400).json({
+      error: 'Username already exists'
+    });
   }
+});
+
+// Home (protected)
+app.get('/home', (req, res) => {
+  if (!req.session.userId) {
+    return res.redirect('/');
+  }
+  res.sendFile(path.join(PUBLIC_DIR, 'home.html'));
 });
 
 // Logout
@@ -84,18 +94,7 @@ app.post('/logout', (req, res) => {
   });
 });
 
-/* ---------- PROTECTED HOME ---------- */
-
-app.get('/home', (req, res) => {
-  if (!req.session.userId) {
-    return res.redirect('/');
-  }
-
-  res.sendFile(path.join(PUBLIC_DIR, 'home.html'));
-});
-
-/* ---------- START SERVER ---------- */
-
+// Start
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

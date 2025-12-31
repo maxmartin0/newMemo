@@ -2,76 +2,99 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Modern Neo Website</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/style.css" />
+  <title>Login</title>
+  <link rel="stylesheet" href="style.css" />
+
+  <style>
+    .error {
+      color: #ef4444;
+      font-size: 0.9rem;
+      margin-top: 0.5rem;
+      text-align: center;
+    }
+  </style>
 </head>
 <body>
 
-  <!-- Navbar -->
+  <!-- NAVBAR -->
   <nav class="navbar">
-    <h1 class="logo">MySite</h1>
+    <h1 class="logo">Memo.com</h1>
+    <ul class="nav-links">
+      <li><a href="/">Home</a></li>
+    </ul>
   </nav>
 
-  <!-- Hero / Login & Register -->
+  <!-- HERO -->
   <section class="hero">
     <h2>Welcome Back</h2>
     <p>Please sign in to continue</p>
 
-    <!-- Login Box -->
     <div class="login-box">
+      <!-- LOGIN -->
+      <input id="login-user" type="text" placeholder="Username" />
+      <input id="login-pass" type="password" placeholder="Password" />
 
-      <!-- LOGIN FORM -->
-      <h3 style="text-align:center; margin-bottom:1rem;">Login</h3>
-      <form id="login-form">
-      <form action="/login" method="POST">
-        <input type="text" name="username" placeholder="Username" required />
-        <input type="password" name="password" placeholder="Password" required />
-        <div style="height: 1rem;"></div>
-        <button class="btn" type="submit">Login</button>
-      </form>
+      <div style="height: 0.5rem;"></div>
 
-      <!-- Login error -->
-      <p id="login-error" style="color:red; text-align:center; margin-top:0.5rem;"></p>
+      <button class="btn" onclick="login()">Login</button>
+      <div id="login-error" class="error"></div>
 
-      <hr style="margin:1.5rem 0; border:0; border-top:1px solid #94A3B8;">
+      <div style="height: 1.5rem;"></div>
 
-      <!-- REGISTER FORM -->
-      <h3 style="text-align:center; margin-bottom:1rem;">Register</h3>
-      <form action="/register" method="POST">
-        <input type="text" name="username" placeholder="New Username" required />
-        <input type="password" name="password" placeholder="New Password" required />
-        <div style="height: 1rem;"></div>
-        <button class="btn" type="submit">Register</button>
-      </form>
+      <!-- REGISTER -->
+      <input id="reg-user" type="text" placeholder="New Username" />
+      <input id="reg-pass" type="password" placeholder="New Password" />
 
+      <div style="height: 0.5rem;"></div>
+
+      <button class="btn" onclick="register()">Create Account</button>
+      <div id="register-error" class="error"></div>
     </div>
   </section>
 
-  <script>
-    const loginForm = document.getElementById('login-form');
-    const loginError = document.getElementById('login-error');
+<script>
+async function login() {
+  document.getElementById('login-error').textContent = '';
 
-    loginForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
+  const res = await fetch('/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      username: document.getElementById('login-user').value,
+      password: document.getElementById('login-pass').value
+    })
+  });
 
-      const formData = new FormData(loginForm);
-      const data = new URLSearchParams(formData);
+  const data = await res.json();
 
-      const response = await fetch('/login', {
-        method: 'POST',
-        body: data
-      });
+  if (!res.ok) {
+    document.getElementById('login-error').textContent = data.error;
+  } else {
+    window.location.href = '/home';
+  }
+}
 
-      const result = await response.json();
-      if (result.success) {
-        window.location.href = '/home';
-      } else {
-        loginError.textContent = result.message;
-      }
-    });
-  </script>
+async function register() {
+  document.getElementById('register-error').textContent = '';
+
+  const res = await fetch('/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      username: document.getElementById('reg-user').value,
+      password: document.getElementById('reg-pass').value
+    })
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    document.getElementById('register-error').textContent = data.error;
+  } else {
+    alert('Account created! You can now log in.');
+  }
+}
+</script>
 
 </body>
 </html>
