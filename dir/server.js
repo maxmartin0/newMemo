@@ -11,7 +11,8 @@ const PORT = process.env.PORT || 3000;
 // ----------------------
 // DATABASE SETUP
 // ----------------------
-const db = new Database('database.db');
+const dbPath = path.join(__dirname, '../data/database.db');
+const db = new Database(dbPath);
 db.prepare(`
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -25,10 +26,8 @@ db.prepare(`
 // MIDDLEWARE
 // ----------------------
 app.use(bodyParser.urlencoded({ extended: true }));
-
-// Static files (CSS, JS, images)
-app.use(express.static(path.join(__dirname, 'public')));
-
+app.use(express.json());
+app.use(express.static(path.join(__dirname, '../public')));
 app.use(session({
   secret: process.env.SESSION_SECRET || 'dev_secret_change_me',
   resave: false,
@@ -39,16 +38,30 @@ app.use(session({
 // ROUTES
 // ----------------------
 
-// Homepage
+// Root (login/register)
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  if (req.session.userId) return res.redirect('/home');
+  res.sendFile(path.join(__dirname, '../public', 'index.html'));
 });
 
-// Register new user
+// Login (AJAX)
+app.post('/login', async (req, res) => {
+  const { username, password } = req.body;
+  const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
+  if (!user) return res.json({ success: false, message: "User not found" });
+
+  const match = await bcrypt.compare(password, user.password);
+  if (!match) return res.json({ success: false, message: "Incorrect password" });
+
+  req.session.userId = user.id;
+  req.session.role = user.role;
+  res.json({ success: true });
+});
+
+// Register
 app.post('/register', async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) return res.send("Username and password required.");
-
   const hashed = await bcrypt.hash(password, 10);
   try {
     db.prepare('INSERT INTO users (username, password) VALUES (?, ?)').run(username, hashed);
@@ -58,31 +71,26 @@ app.post('/register', async (req, res) => {
   }
 });
 
-// Login
-app.post('/login', async (req, res) => {
-  const { username, password } = req.body;
-  const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
-  if (!user) return res.send("User not found.");
-
-  const match = await bcrypt.compare(password, user.password);
-  if (!match) return res.send("Incorrect password.");
-
-  req.session.userId = user.id;
-  req.session.role = user.role;
-
-  res.send(`Welcome ${user.username}! <a href='/'>Go back</a>`);
-});
-
 // Logout
 app.get('/logout', (req, res) => {
-  req.session.destroy(() => {
-    res.redirect('/');
-  });
+  req.session.destroy(() => res.redirect('/'));
 });
 
-// ----------------------
-// START SERVER
-// ----------------------
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+// Blank home page
+app.get('/home', (req, res) => {
+  if (!req.session.userId) return res.redirect('/');
+  res.send(`
+    <html>
+      <head>
+        <title>Home</title>
+        <link rel="stylesheet" href="/style.css">
+      </head>
+      <body style="display:flex;flex-direction:column;justify-content:center;align-items:center;height:100vh;background:#0F172A;color:#E5E7EB;">
+        <h1>Welcome! You are logged in.</h1>
+        <a href="/logout" style="margin-top:2rem;color:#3B82F6;">Logout</a>
+      </body>
+    </html>
+  `);
 });
+
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
