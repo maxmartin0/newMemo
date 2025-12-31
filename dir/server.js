@@ -10,17 +10,23 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ----------------------
+// PATHS (MATCH YOUR STRUCTURE)
+// ----------------------
+const ROOT_DIR = __dirname; // /dir
+const PUBLIC_DIR = path.join(ROOT_DIR, 'public');
+const DATA_DIR = path.join(ROOT_DIR, 'data');
+
+// ----------------------
 // ENSURE DATA DIRECTORY EXISTS
 // ----------------------
-const dataDir = path.join(__dirname, '../data');
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
 // ----------------------
 // DATABASE SETUP
 // ----------------------
-const dbPath = path.join(dataDir, 'database.db');
+const dbPath = path.join(DATA_DIR, 'database.db');
 const db = new Database(dbPath);
 
 db.prepare(`
@@ -37,7 +43,8 @@ db.prepare(`
 // ----------------------
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '../public')));
+app.use(express.static(PUBLIC_DIR));
+
 app.use(session({
   secret: process.env.SESSION_SECRET || 'dev_secret_change_me',
   resave: false,
@@ -49,7 +56,7 @@ app.use(session({
 // ----------------------
 app.get('/', (req, res) => {
   if (req.session.userId) return res.redirect('/home');
-  res.sendFile(path.join(__dirname, '../public', 'index.html'));
+  res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
 });
 
 // Login (AJAX)
