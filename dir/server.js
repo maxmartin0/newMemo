@@ -1,14 +1,18 @@
 const express = require('express');
 const session = require('express-session');
-const bodyParser = require('body-parser');
-const sqlite3 = require('better-sqlite3');
 const path = require('path');
+const fs = require('fs');
+const Database = require('better-sqlite3');
 
 const app = express();
-const dbPath = path.join(__dirname, 'data', 'database.db');
-const db = new sqlite3(dbPath);
+const PORT = process.env.PORT || 10000;
 
-// Create tables if not exist
+/* ---------- DATABASE ---------- */
+const dataDir = path.join(__dirname, 'data');
+if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
+
+const db = new Database(path.join(dataDir, 'database.db'));
+
 db.prepare(`
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -17,89 +21,81 @@ db.prepare(`
   )
 `).run();
 
-db.prepare(`
-  CREATE TABLE IF NOT EXISTS notes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER,
-    title TEXT,
-    content TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(user_id) REFERENCES users(id)
-  )
-`).run();
+/* ---------- MIDDLEWARE ---------- */
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(session({ secret: 'secret', resave: false, saveUninitialized: true }));
+app.use(
+  session({
+    secret: 'memo-secret',
+    resave: false,
+    saveUninitialized: false
+  })
+);
+
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Middleware for auth
-function auth(req, res, next) {
-  if (!req.session.userId) return res.redirect('/');
-  next();
-}
+/* ---------- ROUTES ---------- */
 
-// Routes
+// LOGIN PAGE
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// LOGIN
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
-  const user = db.prepare('SELECT * FROM users WHERE username = ? AND password = ?')
-                 .get(username, password);
-  if (user) {
-    req.session.userId = user.id;
-    res.redirect('/home');
-  } else {
-    res.redirect('/?loginError=1');
+
+  const user = db
+    .prepare('SELECT * FROM users WHERE username = ? AND password = ?')
+    .get(username, password);
+
+  if (!user) {
+    return res.status(401).json({ error: 'Invalid username or password' });
   }
+
+  req.session.user = user.username;
+  res.json({ success: true });
 });
 
+// REGISTER
 app.post('/register', (req, res) => {
   const { username, password } = req.body;
+
   try {
-    db.prepare('INSERT INTO users (username, password) VALUES (?, ?)').run(username, password);
-    res.redirect('/');
-  } catch (err) {
-    res.redirect('/?registerError=1');
+    db.prepare(
+      'INSERT INTO users (username, password) VALUES (?, ?)'
+    ).run(username, password);
+
+    res.json({ success: true });
+  } catch {
+    res.status(400).json({ error: 'Username already exists' });
   }
 });
 
-// Home / Notes Dashboard
-app.get('/home', auth, (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+// HOME (PROTECTED)
+app.get('/home', (req, res) => {
+  if (!req.session.user) {
+    return res.redirect('/');
+  }
+
+  let html = fs.readFileSync(
+    path.join(__dirname, 'public', 'home.html'),
+    'utf8'
+  );
+
+  html = html.replace('>>username<<', req.session.user);
+  res.send(html);
 });
 
-// API for notes
-app.get('/notes', auth, (req, res) => {
-  const notes = db.prepare('SELECT * FROM notes WHERE user_id = ? ORDER BY created_at DESC')
-                  .all(req.session.userId);
-  res.json(notes);
+// LOGOUT
+app.get('/logout', (req, res) => {
+  req.session.destroy(() => {
+    res.redirect('/');
+  });
 });
 
-app.post('/notes', auth, (req, res) => {
-  const { title, content } = req.body;
-  db.prepare('INSERT INTO notes (user_id, title, content) VALUES (?, ?, ?)')
-    .run(req.session.userId, title || 'Untitled', content || '');
-  res.redirect('/home');
+/* ---------- START SERVER ---------- */
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
-
-app.get('/notes/:id', auth, (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'note.html'));
-});
-
-app.post('/notes/:id/delete', auth, (req, res) => {
-  db.prepare('DELETE FROM notes WHERE id = ? AND user_id = ?')
-    .run(req.params.id, req.session.userId);
-  res.redirect('/home');
-});
-
-app.post('/notes/:id', auth, (req, res) => {
-  const { title, content } = req.body;
-  db.prepare('UPDATE notes SET title = ?, content = ? WHERE id = ? AND user_id = ?')
-    .run(title, content, req.params.id, req.session.userId);
-  res.redirect('/home');
-});
-
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

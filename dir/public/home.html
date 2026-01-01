@@ -1,47 +1,45 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Memo App - Home</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Memo.com | Home</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="top-text">
-  <h1>Memo App</h1>
-</div>
 
-<div class="notes-container">
-  <!-- Notes cards will be populated here -->
-</div>
-<button id="addNote" class="floating-button">+</button>
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <h1 class="logo">Memo.com</h1>
+    <ul class="nav-links">
+      <li><a href="/logout">Sign Out</a></li>
+    </ul>
+  </nav>
+  
+  <section class="hero">
+    
+    <h2>Welcome >>username<< to Memo.com</h2>
+    
+    <section class="cards">
+      <a href="/notes" class="card link-card">
+        <h3>Notes</h3>
+        <p>Write and edit notes</p>
+      </a>
+  
+      <a href="/" class="card link-card">
+        <h3>Chat</h3>
+        <p>Talk with users</p>
+      </a>
+    
+      <a href="/" class="card link-card">
+        <h3>Settings</h3>
+        <p>Manage your account</p>
+      </a>
+    </section>
+  </section>
 
+  
 <script>
-  async function loadNotes() {
-    const notesContainer = document.querySelector('.notes-container');
-    const res = await fetch('/notes');
-    const notes = await res.json();
-    notesContainer.innerHTML = notes.map(n => `
-      <div class="card" onclick="location.href='/notes/${n.id}'">
-        <h3>${n.title}</h3>
-        <p>${n.content.substring(0, 50)}</p>
-      </div>
-    `).join('');
-  }
-
-  document.getElementById('addNote').addEventListener('click', async () => {
-    const title = prompt("Note title?");
-    if (title !== null) {
-      await fetch('/notes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `title=${encodeURIComponent(title)}&content=`
-      });
-      loadNotes();
-    }
-  });
-
-  loadNotes();
 </script>
 </body>
 </html>
