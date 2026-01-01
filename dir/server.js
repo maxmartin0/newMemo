@@ -96,13 +96,14 @@ app.get('/logout', (req, res) => {
 });
 
 // Serve notes page
-app.get('/notes', (req, res) => {
-  if (!req.session.username) {
-    // if not logged in, redirect to login
-    return res.redirect('/');
+app.get("/notes", (req, res) => {
+  if (!req.session.user) {
+    return res.redirect("/");
   }
-  res.sendFile(__dirname + '/public/notes.html');
+
+  res.sendFile(path.join(__dirname, "public", "notes.html"));
 });
+
 
 
 /* ---------- START SERVER ---------- */
