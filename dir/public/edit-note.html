@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Edit Note</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <h1 class="logo">Memo.com</h1>
+  <ul class="nav-links">
+    <li><a href="/notes.html">Back</a></li>
+    <li><a href="/home">Home</a></li>
+    <li><a href="/logout">Sign Out</a></li>
+  </ul>
+</nav>
+
+<section class="hero">
+  <h2>Edit Note</h2>
+
+  <div class="login-box">
+    <input id="note-title" placeholder="Note title">
+    <textarea id="note-content" placeholder="Write your note..." rows="8"></textarea>
+    <button class="btn" onclick="saveNote()">Save</button>
+  </div>
+</section>
+
+<script src="edit-note.js"></script>
+</body>
+</html>

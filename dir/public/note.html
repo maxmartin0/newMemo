@@ -3,54 +3,81 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Edit Note</title>
+<title>Memo.com | Notes</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="top-text">
-  <h1>Edit Note</h1>
-</div>
 
-<form id="noteForm" method="POST">
-  <input name="title" placeholder="Title" required>
-  <textarea name="content" placeholder="Content"></textarea>
-  <button type="submit">Save</button>
-</form>
+<nav class="navbar">
+  <h1 class="logo">Memo.com</h1>
+  <ul class="nav-links">
+    <li><a href="/home">Home</a></li>
+    <li><a href="/logout">Sign Out</a></li>
+  </ul>
+</nav>
 
-<form id="deleteForm" method="POST">
-  <button type="submit">Delete Note</button>
-</form>
+<section class="hero">
+  <h2>Your Notes</h2>
+  <p>Click note to edit</p>
+  
+  <section class="cards">
+    <a href="/edit-note.html?slot=1" class="card link-card" id="notes-card-1">
+      <h3>Note 1</h3>
+      <p>>>Note Title<<</p>
+    </a>
+    <a href="/edit-note.html?slot=2" class="card link-card" id="notes-card-2">
+      <h3>Note 2</h3>
+      <p>>>Note Title<<</p>
+    </a>
+    <a href="/edit-note.html?slot=3" class="card link-card" id="notes-card-3"">
+      <h3>Note 3</h3>
+      <p>>>Note Title<<</p>
+    </a>
+  </section>
+  <section class="cards">
+    <a href="/edit-note.html?slot=4" class="card link-card" id="notes-card-4">
+      <h3>Note 4</h3>
+      <p>>>Note Title<<</p>
+    </a>
+    <a href="/edit-note.html?slot=5" class="card link-card" id="notes-card-5">
+      <h3>Note 5</h3>
+      <p>>>Note Title<<</p>
+    </a>
+    <a href="/edit-note.html?slot=6" class="card link-card" id="notes-card-6">
+      <h3>Note 6</h3>
+      <p>>>Note Title<<</p>
+    </a>
+  </section>
+  <section class="cards">
+    <a href="/edit-note.html?slot=7" class="card link-card" id="notes-card-7">
+      <h3>Note 7</h3>
+      <p>>>Note Title<<</p>
+    </a>
+    <a href="/edit-note.html?slot=8" class="card link-card" id="notes-card-8">
+      <h3>Note 8</h3>
+      <p>>>Note Title<<</p>
+    </a>
+    <a href="/edit-note.html?slot=9" class="card link-card" id="notes-card-9">
+      <h3>Note 9</h3>
+      <p>>>Note Title<<</p>
+    </a>
+  </section>
+  <section class="cards">
+    <a href="/edit-note.html?slot=10" class="card link-card" id="notes-card-10">
+      <h3>Note 10</h3>
+      <p>>>Note Title<<</p>
+    </a>
+    <a href="/edit-note.html?slot=11" class="card link-card" id="notes-card-11">
+      <h3>Note 11</h3>
+      <p>>>Note Title<<</p>
+    </a>
+    <a href="/edit-note.html?slot=12" class="card link-card" id="notes-card-12">
+      <h3>Note 12</h3>
+      <p>>>Note Title<<</p>
+    </a>
+  </section>
+</section>
 
-<script>
-  const noteId = window.location.pathname.split('/').pop();
-
-  async function loadNote() {
-    const res = await fetch('/notes');
-    const notes = await res.json();
-    const note = notes.find(n => n.id == noteId);
-    if (note) {
-      document.noteForm.title.value = note.title;
-      document.noteForm.content.value = note.content;
-    }
-  }
-
-  document.noteForm.addEventListener('submit', async e => {
-    e.preventDefault();
-    await fetch(`/notes/${noteId}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `title=${encodeURIComponent(document.noteForm.title.value)}&content=${encodeURIComponent(document.noteForm.content.value)}`
-    });
-    window.location.href = '/home';
-  });
-
-  document.deleteForm.addEventListener('submit', async e => {
-    e.preventDefault();
-    await fetch(`/notes/${noteId}/delete`, { method: 'POST' });
-    window.location.href = '/home';
-  });
-
-  loadNote();
-</script>
+<script src="notes.js"></script>
 </body>
 </html>
